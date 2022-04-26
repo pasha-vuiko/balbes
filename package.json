@@ -1,11 +1,33 @@
 {
   "name": "balbes",
-  "version": "0.0.0",
-  "description": "try to create not dummy node.js framework",
+  "version": "0.0.1",
+  "description": "try to create not dummy node.js framework with serving requests via worker threads",
   "main": "index.js",
   "scripts": {
+    "start": "tsc -p tsconfig.json && node dist/src/app/main.js",
+    "build": "tsc -p tsconfig.json",
+    "start:dev": "nodemon src/app/main.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Pavlo Vuiko",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^17.0.27",
+    "@typescript-eslint/eslint-plugin": "^5.21.0",
+    "@typescript-eslint/parser": "^5.21.0",
+    "autocannon": "^7.8.1",
+    "dotenv": "^16.0.0",
+    "eslint": "^8.14.0",
+    "eslint-config-prettier": "^8.5.0",
+    "eslint-plugin-prettier": "^4.0.0",
+    "nodemon": "^2.0.15",
+    "prettier": "^2.6.2",
+    "ts-node": "^10.7.0",
+    "tsconfig-paths": "^3.14.1",
+    "typescript": "^4.6.3"
+  },
+  "dependencies": {
+    "fastify": "^3.28.0",
+    "node-worker-threads-pool": "^1.5.1"
+  }
 }
