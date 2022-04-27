@@ -1,6 +1,6 @@
 {
   "name": "balbes",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "try to create not dummy node.js framework with serving requests via worker threads",
   "main": "index.js",
   "scripts": {

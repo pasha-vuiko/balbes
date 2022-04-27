@@ -6,4 +6,9 @@ export const routes: BalbesRouteInterface[] = [
     path: '/',
     controller: async () => 'hello from controller' as any,
   },
+  {
+    method: 'GET',
+    path: '/world',
+    controller: async () => 'hello world' as any,
+  },
 ];

@@ -7,17 +7,17 @@ import { RouteControllerParams } from './interfaces/route/controller.interface';
 import { StaticPool } from 'node-worker-threads-pool';
 import { getDirList } from './shared/utils/getDirList';
 import { BalbesRouteInterface } from './interfaces/route/route.interface';
-import { ServerResponse } from 'http';
+import { IncomingMessage, ServerResponse } from 'http';
 
 class Balbes {
   private server: Server;
   private workerPool: StaticPool<any, any>;
   private apiFolderPath: string;
-  private routes: Map<string, Route>;
+  private routes: Map<string, BalbesRoute>;
 
   constructor(private config: BalbesConfigInterface) {
     this.apiFolderPath = config.apiFolderPath;
-    this.routes = new Map<string, Route>();
+    this.routes = new Map<string, BalbesRoute>();
     this.initWorkerThreadPool(config.workerPoolSize);
   }
 
@@ -30,6 +30,7 @@ class Balbes {
   private initServer(): void {
     this.server = http.createServer(async (req, res) => {
       const url = req.url?.split('/')[1];
+      // const url = this.getReqUrl(req);
       const routeKey = this.getRouteKey(req.method as string, url as string);
       const route = this.routes.get(routeKey);
 
@@ -44,6 +45,20 @@ class Balbes {
 
       res.end(response);
     });
+  }
+
+  private getReqUrl(req: IncomingMessage): string | undefined {
+    const rawUrl = req.url;
+
+    if (!rawUrl) {
+      return undefined;
+    }
+
+    if (rawUrl[0] === '/') {
+      return rawUrl.replace('/', '');
+    }
+
+    return rawUrl;
   }
 
   private async getControllerParams(req: any): Promise<RouteControllerParams> {
@@ -62,28 +77,34 @@ class Balbes {
   private async initServerRoutes(): Promise<void> {
     const apiRootRoutes = await getDirList(this.apiFolderPath);
 
-    for (const route of apiRootRoutes) {
-      const routeDir = resolve(this.apiFolderPath, route, 'router.js');
-      const { routes } = await import(routeDir);
+    for (const rootRoute of apiRootRoutes) {
+      const rootRouteDir = resolve(this.apiFolderPath, rootRoute, 'router.js');
+      const { routes: subRoutes } = await import(rootRouteDir);
 
-      this.initSubRoutes(routes, route, routeDir);
+      this.initSubRoutes(subRoutes, rootRoute, rootRouteDir);
     }
   }
 
   private initSubRoutes(
     subRoutes: BalbesRouteInterface[],
-    routeRootPath: string,
-    routeDir: string
+    rootRoute: string,
+    rootRouteDir: string
   ) {
-    subRoutes.forEach((route, index) => {
-      const routeKey = this.getRouteKey(route.method, routeRootPath);
+    subRoutes.forEach((subRoute, index) => {
+      const routeKey = this.getRouteKey(subRoute.method, rootRoute.concat(subRoute.path));
 
-      this.routes.set(routeKey, { index, dirPath: routeDir });
+      this.routes.set(routeKey, { index, dirPath: rootRouteDir });
     });
   }
 
   private getRouteKey(method: string, url: string): string {
-    return `${method}.${url}`;
+    const routeKey = `${method}.${url}`;
+
+    if (routeKey.at(-1) === '/') {
+      return routeKey.slice(0, -1);
+    }
+
+    return routeKey;
   }
 
   private initWorkerThreadPool(poolSize?: number): void {
@@ -96,7 +117,7 @@ class Balbes {
     });
   }
 
-  private handleRequest<T>(route: Route, params: RouteControllerParams): Promise<T> { // TODO add types
+  private handleRequest<T>(route: BalbesRoute, params: RouteControllerParams): Promise<T> { // TODO add types
     return this.workerPool.exec({ route, params });
   }
 }
@@ -105,7 +126,7 @@ export const balbes = (config: BalbesConfigInterface) => {
   return new Balbes(config);
 };
 
-interface Route {
+interface BalbesRoute {
   index: number;
   dirPath: string;
 }
