@@ -4,11 +4,16 @@ export const routes: BalbesRouteInterface[] = [
   {
     method: 'GET',
     path: '/',
-    controller: async () => 'hello from controller' as any,
+    controller: async () => 'hello from controller',
   },
   {
     method: 'GET',
     path: '/world',
-    controller: async () => 'hello world' as any,
+    controller: async () => 'hello world',
+  },
+  {
+    method: 'GET',
+    path: '/query',
+    controller: async ({ query }) => query,
   },
 ];
