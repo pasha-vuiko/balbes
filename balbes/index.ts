@@ -11,7 +11,7 @@ import { IncomingMessage, ServerResponse } from 'http';
 
 class Balbes {
   private server: Server;
-  private workerPool: StaticPool<any, any>;
+  private workerPool: StaticPool<any>;
   private apiFolderPath: string;
   private routes: Map<string, BalbesRoute>;
 
@@ -29,8 +29,7 @@ class Balbes {
 
   private initServer(): void {
     this.server = http.createServer(async (req, res) => {
-      const url = req.url?.split('/')[1];
-      // const url = this.getReqUrl(req);
+      const url = this.getReqUrl(req);
       const routeKey = this.getRouteKey(req.method as string, url as string);
       const route = this.routes.get(routeKey);
 
