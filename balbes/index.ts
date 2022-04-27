@@ -4,14 +4,14 @@ import { resolve } from 'node:path';
 
 import { BalbesConfigInterface } from './interfaces/balbesConfigInterface';
 import { RouteControllerParams } from './interfaces/route/controller.interface';
-import { DynamicPool } from 'node-worker-threads-pool';
+import { StaticPool } from 'node-worker-threads-pool';
 import { getDirList } from './shared/utils/getDirList';
 import { BalbesRouteInterface } from './interfaces/route/route.interface';
 import { ServerResponse } from 'http';
 
 class Balbes {
   private server: Server;
-  private workerPool: DynamicPool;
+  private workerPool: StaticPool<any, any>;
   private apiFolderPath: string;
   private routes: Map<string, Route>;
 
@@ -87,29 +87,17 @@ class Balbes {
   }
 
   private initWorkerThreadPool(poolSize?: number): void {
-    if (poolSize) {
-      this.workerPool = new DynamicPool(poolSize);
-      return;
-    }
-
     const numberOfCPUs = cpus().length;
     const computedPoolSize = Math.floor(numberOfCPUs / 1.5) || 1;
 
-    this.workerPool = new DynamicPool(computedPoolSize);
+    this.workerPool = this.workerPool = new StaticPool({
+      size: poolSize ?? computedPoolSize,
+      task: `${__dirname}/workers/handle-request.js`
+    });
   }
 
   private handleRequest<T>(route: Route, params: RouteControllerParams): Promise<T> { // TODO add types
-    return this.workerPool.exec({
-      param: { route, params },
-      task: async data => {
-        // the func will be parsed with eval() so it has no access to upper scope
-        // required to work with esModuleInterop typescript config
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
-        const { routes } = require(data.route.dirPath);
-
-        return routes[data.route.index].controller(data.params);
-      },
-    });
+    return this.workerPool.exec({ route, params });
   }
 }
 
